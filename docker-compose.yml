@@ -1,0 +1,163 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database for Evolution API
+  postgres:
+    image: postgres:16-alpine
+    container_name: evolution_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-evolution}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-evolution_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-evolution}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-evolution}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - evolution_network
+
+  # Redis Cache for Evolution API
+  redis:
+    image: redis:7-alpine
+    container_name: evolution_redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - evolution_network
+
+  # Evolution API v2
+  evolution-api:
+    image: atendai/evolution-api:v2.1.1
+    container_name: evolution_api
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Server Configuration
+      - SERVER_URL=${EVOLUTION_SERVER_URL:-http://localhost:8080}
+      - DEL_INSTANCE=false
+
+      # Database Configuration
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://${POSTGRES_USER:-evolution}:${POSTGRES_PASSWORD:-evolution_secure_password}@postgres:5432/${POSTGRES_DB:-evolution}?schema=public
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
+      - DATABASE_SAVE_MESSAGE_UPDATE=true
+      - DATABASE_SAVE_DATA_CONTACTS=true
+      - DATABASE_SAVE_DATA_CHATS=true
+      - DATABASE_SAVE_DATA_LABELS=true
+      - DATABASE_SAVE_DATA_HISTORIC=true
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_v2
+
+      # Redis Cache Configuration
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379/1
+      - CACHE_REDIS_PREFIX_KEY=evolution_v2
+      - CACHE_REDIS_SAVE_INSTANCES=false
+      - CACHE_LOCAL_ENABLED=false
+
+      # RabbitMQ Configuration (disabled by default)
+      - RABBITMQ_ENABLED=false
+
+      # S3 Storage Configuration (disabled by default)
+      - S3_ENABLED=false
+
+      # Authentication
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-change_this_to_a_secure_random_key}
+
+      # Webhook Configuration
+      - WEBHOOK_GLOBAL_URL=${NEXT_PUBLIC_APP_URL:-http://nextjs-app:3000}/api/webhooks
+      - WEBHOOK_GLOBAL_ENABLED=true
+      - WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS=true
+
+      # QR Code Configuration
+      - QRCODE_LIMIT=30
+      - QRCODE_COLOR=#198754
+
+      # TypeBot Integration
+      - TYPEBOT_ENABLED=false
+
+      # Chatwoot Integration
+      - CHATWOOT_ENABLED=false
+
+      # OpenAI Integration
+      - OPENAI_ENABLED=false
+
+      # Proxy Configuration
+      - PROXY_HOST=
+      - PROXY_PORT=
+      - PROXY_PROTOCOL=http
+      - PROXY_USERNAME=
+      - PROXY_PASSWORD=
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - evolution_network
+
+  # Next.js Application
+  nextjs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    container_name: nextjs_app
+    restart: always
+    depends_on:
+      evolution-api:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - EVOLUTION_API_URL=http://evolution-api:8080
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY:-change_this_to_a_secure_random_key}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    ports:
+      - "3000:5000"
+    networks:
+      - evolution_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  evolution_instances:
+    driver: local
+  evolution_store:
+    driver: local
+
+networks:
+  evolution_network:
+    driver: bridge
