@@ -293,7 +293,7 @@ export function CreateBroadcastForm({ onClose, onSuccess }: CreateBroadcastFormP
                       }
                     />
                     <p className="text-xs text-muted-foreground">
-                      This title is for your reference only and won't be visible to recipients
+                      This title is for your reference only and won&apos;t be visible to recipients
                     </p>
                   </div>
 
@@ -373,13 +373,13 @@ export function CreateBroadcastForm({ onClose, onSuccess }: CreateBroadcastFormP
                           <code className="bg-muted px-1 py-0.5 rounded text-primary">
                             {'{{name}}'}
                           </code>{' '}
-                          - Recipient's name
+                          - Recipient&apos;s name
                         </li>
                         <li>
                           <code className="bg-muted px-1 py-0.5 rounded text-primary">
                             {'{{phone}}'}
                           </code>{' '}
-                          - Recipient's phone number
+                          - Recipient&apos;s phone number
                         </li>
                       </ul>
                     </div>
