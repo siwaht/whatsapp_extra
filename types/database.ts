@@ -73,7 +73,10 @@ export interface Database {
           full_name: string;
           avatar_url: string | null;
           role_id: string | null;
+          evolution_api_url: string | null;
+          evolution_api_key: string | null;
           pica_secret_key: string | null;
+          pica_weaviate_connection_key: string | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -84,7 +87,10 @@ export interface Database {
           full_name?: string;
           avatar_url?: string | null;
           role_id?: string | null;
+          evolution_api_url?: string | null;
+          evolution_api_key?: string | null;
           pica_secret_key?: string | null;
+          pica_weaviate_connection_key?: string | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -95,7 +101,10 @@ export interface Database {
           full_name?: string;
           avatar_url?: string | null;
           role_id?: string | null;
+          evolution_api_url?: string | null;
+          evolution_api_key?: string | null;
           pica_secret_key?: string | null;
+          pica_weaviate_connection_key?: string | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -834,6 +843,276 @@ export interface Database {
           created_at?: string;
         };
       };
+      webhook_configs: {
+        Row: {
+          id: string;
+          user_id: string;
+          instance_id: string;
+          name: string;
+          url: string;
+          events: string[];
+          headers: Json;
+          is_active: boolean;
+          retry_count: number;
+          timeout_ms: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          instance_id: string;
+          name: string;
+          url: string;
+          events?: string[];
+          headers?: Json;
+          is_active?: boolean;
+          retry_count?: number;
+          timeout_ms?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          instance_id?: string;
+          name?: string;
+          url?: string;
+          events?: string[];
+          headers?: Json;
+          is_active?: boolean;
+          retry_count?: number;
+          timeout_ms?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      evolution_api_status: {
+        Row: {
+          id: string;
+          current_version: string;
+          latest_version: string | null;
+          last_check_at: string | null;
+          update_available: boolean;
+          auto_update_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          current_version?: string;
+          latest_version?: string | null;
+          last_check_at?: string | null;
+          update_available?: boolean;
+          auto_update_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          current_version?: string;
+          latest_version?: string | null;
+          last_check_at?: string | null;
+          update_available?: boolean;
+          auto_update_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      evolution_api_update_history: {
+        Row: {
+          id: string;
+          from_version: string;
+          to_version: string;
+          status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'rolled_back';
+          started_at: string;
+          completed_at: string | null;
+          error_message: string | null;
+          initiated_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_version: string;
+          to_version: string;
+          status?: 'pending' | 'in_progress' | 'completed' | 'failed' | 'rolled_back';
+          started_at?: string;
+          completed_at?: string | null;
+          error_message?: string | null;
+          initiated_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          from_version?: string;
+          to_version?: string;
+          status?: 'pending' | 'in_progress' | 'completed' | 'failed' | 'rolled_back';
+          started_at?: string;
+          completed_at?: string | null;
+          error_message?: string | null;
+          initiated_by?: string | null;
+          created_at?: string;
+        };
+      };
+      broadcast_recipients: {
+        Row: {
+          id: string;
+          broadcast_id: string;
+          contact_id: string | null;
+          whatsapp_id: string;
+          phone_number: string | null;
+          name: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          broadcast_id: string;
+          contact_id?: string | null;
+          whatsapp_id: string;
+          phone_number?: string | null;
+          name?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          broadcast_id?: string;
+          contact_id?: string | null;
+          whatsapp_id?: string;
+          phone_number?: string | null;
+          name?: string | null;
+          created_at?: string;
+        };
+      };
+      broadcast_logs: {
+        Row: {
+          id: string;
+          broadcast_id: string;
+          recipient_id: string | null;
+          whatsapp_id: string;
+          status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+          message_id: string | null;
+          error_message: string | null;
+          sent_at: string | null;
+          delivered_at: string | null;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          broadcast_id: string;
+          recipient_id?: string | null;
+          whatsapp_id: string;
+          status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+          message_id?: string | null;
+          error_message?: string | null;
+          sent_at?: string | null;
+          delivered_at?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          broadcast_id?: string;
+          recipient_id?: string | null;
+          whatsapp_id?: string;
+          status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+          message_id?: string | null;
+          error_message?: string | null;
+          sent_at?: string | null;
+          delivered_at?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+      };
+      ai_agent_tools: {
+        Row: {
+          agent_id: string;
+          tool_id: string;
+        };
+        Insert: {
+          agent_id: string;
+          tool_id: string;
+        };
+        Update: {
+          agent_id?: string;
+          tool_id?: string;
+        };
+      };
+      ai_agent_instances: {
+        Row: {
+          agent_id: string;
+          instance_id: string;
+          is_active: boolean;
+          trigger_keywords: Json;
+          created_at: string;
+        };
+        Insert: {
+          agent_id: string;
+          instance_id: string;
+          is_active?: boolean;
+          trigger_keywords?: Json;
+          created_at?: string;
+        };
+        Update: {
+          agent_id?: string;
+          instance_id?: string;
+          is_active?: boolean;
+          trigger_keywords?: Json;
+          created_at?: string;
+        };
+      };
+      contact_tag_assignments: {
+        Row: {
+          contact_id: string;
+          tag_id: string;
+        };
+        Insert: {
+          contact_id: string;
+          tag_id: string;
+        };
+        Update: {
+          contact_id?: string;
+          tag_id?: string;
+        };
+      };
+      rate_limit_entries: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          endpoint: string;
+          request_count: number;
+          window_start: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          endpoint: string;
+          request_count?: number;
+          window_start?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          endpoint?: string;
+          request_count?: number;
+          window_start?: string;
+          created_at?: string;
+        };
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }
