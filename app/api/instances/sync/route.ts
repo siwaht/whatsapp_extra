@@ -35,13 +35,19 @@ export async function POST(request: NextRequest) {
 
     let syncedCount = 0;
 
+    interface EvolutionInstance {
+      instanceName: string;
+      status?: string;
+      owner?: string;
+    }
+
     for (const localInstance of localInstances) {
       const evolutionInstance = evolutionInstances.find(
-        (ei: any) => ei.instanceName === localInstance.instance_name
+        (ei: EvolutionInstance) => ei.instanceName === localInstance.instance_name
       );
 
       if (evolutionInstance) {
-        const updates: Record<string, any> = {
+        const updates: Record<string, string> = {
           updated_at: new Date().toISOString(),
         };
 
@@ -64,10 +70,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ synced: syncedCount });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error syncing instances:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to sync instances';
     return NextResponse.json(
-      { error: error?.message || 'Failed to sync instances' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

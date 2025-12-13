@@ -70,14 +70,15 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating instance:', error);
 
-    const errorMessage = error?.message || 'Failed to create instance';
-    const statusCode = error?.status || 500;
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create instance';
+    const errorWithStatus = error as { status?: number; code?: string };
+    const statusCode = errorWithStatus?.status || 500;
 
     return NextResponse.json(
-      { error: errorMessage, code: error?.code },
+      { error: errorMessage, code: errorWithStatus?.code },
       { status: statusCode >= 400 && statusCode < 600 ? statusCode : 500 }
     );
   }

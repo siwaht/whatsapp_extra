@@ -34,9 +34,9 @@ export async function DELETE(request: NextRequest) {
     const result = await evolutionApi.deleteInstance(instanceName);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting instance:', error);
-    const errorMessage = error?.message || 'Failed to delete instance';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete instance';
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

@@ -59,7 +59,19 @@ export const builtInTools: Record<string, ToolDefinition> = {
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/knowledge/search?query=${encodeURIComponent(query)}&limit=${limit}${collection_id ? `&collection_id=${collection_id}` : ''}&user_id=${context.userId}`
+          `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/knowledge/search`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              query,
+              limit,
+              collectionId: collection_id,
+              userId: context.userId,
+            }),
+          }
         );
 
         if (!response.ok) {

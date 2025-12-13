@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
     const result = await evolutionApi.restartInstance(instanceName);
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error restarting instance:', error);
-    const errorMessage = error?.message || 'Failed to restart instance';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to restart instance';
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

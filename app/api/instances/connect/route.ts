@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
     const qrcode = await evolutionApi.connectInstance(instanceName);
 
     return NextResponse.json({ qrcode });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error connecting instance:', error);
-    const errorMessage = error?.message || 'Failed to connect instance';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to connect instance';
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

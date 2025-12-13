@@ -5,13 +5,28 @@ import { builtInTools, formatToolsForPrompt } from '@/lib/ai-agent-tools';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables');
+    throw new Error('Missing Supabase environment variables. SUPABASE_SERVICE_ROLE_KEY is required for admin operations.');
   }
 
   return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+interface KnowledgeLink {
+  collection: {
+    id: string;
+    weaviate_class: string;
+  } | null;
+}
+
+interface AIAgentWithLinks {
+  id: string;
+  name: string;
+  system_prompt: string | null;
+  model: string;
+  knowledge_links: KnowledgeLink[];
 }
 
 export async function POST(request: NextRequest) {
@@ -32,9 +47,18 @@ export async function POST(request: NextRequest) {
 
     if (!userId || !agentId || !message) {
       return NextResponse.json(
-        { error: 'Missing required parameters' },
+        { error: 'Missing required parameters: userId, agentId, and message are required' },
         { status: 400 }
       );
+    }
+
+    if (evolutionApiUrl && evolutionApiKey) {
+      if (!conversationId || !instanceName || !remoteJid) {
+        return NextResponse.json(
+          { error: 'Missing required parameters for WhatsApp messaging: conversationId, instanceName, and remoteJid are required when using Evolution API' },
+          { status: 400 }
+        );
+      }
     }
 
     const supabase = getSupabaseAdmin();
@@ -63,7 +87,7 @@ export async function POST(request: NextRequest) {
       };
 
       try {
-        const collections = (agent.knowledge_links as any[]) || [];
+        const collections = (agent.knowledge_links as KnowledgeLink[]) || [];
 
         for (const link of collections) {
           const collection = link.collection;
@@ -155,7 +179,7 @@ Response:`;
   }
 }
 
-async function generateAIResponse(agent: any, prompt: string): Promise<string> {
+async function generateAIResponse(agent: AIAgentWithLinks, prompt: string): Promise<string> {
   const modelName = agent.model || 'gpt-4';
 
   const simpleResponse = `Based on your message, here's a helpful response. (Note: This is a placeholder. To use actual AI models like GPT-4 or Claude, you need to:

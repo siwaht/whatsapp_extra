@@ -3,27 +3,48 @@ import { createClient } from '@supabase/supabase-js';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing Supabase environment variables');
+    throw new Error('Missing Supabase environment variables. SUPABASE_SERVICE_ROLE_KEY is required for admin operations.');
   }
 
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
+interface WebhookMessage {
+  key: {
+    id: string;
+    remoteJid: string;
+    fromMe?: boolean;
+  };
+  message?: {
+    conversation?: string;
+    extendedTextMessage?: { text?: string };
+    imageMessage?: { caption?: string };
+    videoMessage?: Record<string, unknown>;
+    audioMessage?: Record<string, unknown>;
+    documentMessage?: Record<string, unknown>;
+  };
+}
+
+interface MessagesUpsertData {
+  messages?: WebhookMessage[];
+}
+
+interface MessageUpdateItem {
+  key?: { id?: string };
+  update?: { status?: number };
+}
+
+interface ConnectionUpdateData {
+  state?: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      event,
-      instance,
-      data,
-      destination,
-      date_time,
-      server_url,
-      apikey,
-    } = body;
+    const { event, instance, data } = body;
 
     const supabase = getSupabaseAdmin();
 
@@ -73,7 +94,7 @@ export async function POST(request: NextRequest) {
 async function handleMessagesUpsert(
   supabase: ReturnType<typeof createClient>,
   instanceConfig: { id: string; user_id: string } | null,
-  data: any,
+  data: MessagesUpsertData | null,
   instanceName: string
 ) {
   if (!instanceConfig || !data) return;
@@ -230,11 +251,11 @@ async function processIncomingMessageWithAI(
 async function handleMessagesUpdate(
   supabase: ReturnType<typeof createClient>,
   instanceConfig: { id: string; user_id: string } | null,
-  data: any
+  data: MessageUpdateItem[] | null
 ) {
   if (!instanceConfig || !data) return;
 
-  for (const update of data || []) {
+  for (const update of data) {
     const messageId = update.key?.id;
     const status = update.update?.status;
 
@@ -259,7 +280,7 @@ async function handleMessagesUpdate(
 async function handleConnectionUpdate(
   supabase: ReturnType<typeof createClient>,
   instanceConfig: { id: string; user_id: string } | null,
-  data: any
+  data: ConnectionUpdateData | null
 ) {
   if (!instanceConfig) return;
 

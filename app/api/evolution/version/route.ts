@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@/lib/supabase';
+
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase environment variables. SUPABASE_SERVICE_ROLE_KEY is required for admin operations.');
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     const { data: status, error } = await supabase
       .from('evolution_api_status')
@@ -40,16 +52,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabase();
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
     if (action === 'check') {
+      const supabase = getSupabaseAdmin();
       const latestVersion = await checkLatestVersion();
 
       const { data: currentStatus, error: fetchError } = await supabase
         .from('evolution_api_status')
-        .select('current_version')
+        .select('id, current_version')
         .maybeSingle();
 
       if (fetchError) {
@@ -93,22 +105,39 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'update') {
-      const { data: { user } } = await supabase.auth.getUser();
+      const authHeader = request.headers.get('authorization');
+      const token = authHeader?.replace('Bearer ', '');
+
+      if (!token) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const userSupabase = createServerClient(token);
+      const {
+        data: { user },
+      } = await userSupabase.auth.getUser(token);
 
       if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await userSupabase
         .from('profiles')
         .select('role_id, roles(name)')
         .eq('id', user.id)
         .single();
 
-      if (!profile || (profile as any).roles?.name !== 'admin') {
+      interface ProfileWithRole {
+        role_id: string | null;
+        roles: { name: string } | null;
+      }
+      const typedProfile = profile as ProfileWithRole | null;
+
+      if (!typedProfile || typedProfile.roles?.name !== 'admin') {
         return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
       }
 
+      const supabase = getSupabaseAdmin();
       const { data: status } = await supabase
         .from('evolution_api_status')
         .select('*')
